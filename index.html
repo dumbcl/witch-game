@@ -8,6 +8,7 @@
   <title>Ведьма · Исторический детектив</title>
   <link rel="stylesheet" href="style.css">
   <script src="cards.js" defer></script>
+  <script src="audio.js" defer></script>
   <script src="game.js" defer></script>
   <script src="room-network.js" defer></script>
   <script src="online.js" defer></script>
@@ -22,19 +23,24 @@
         </div>
         <p id="player-count" role="status" hidden></p>
       </div>
-      <aside class="tools" id="tools" hidden aria-label="Партия">
-        <div class="counter">
-          <span class="candle" aria-hidden="true"></span>
-          <div class="counter-copy">
-            <span>Осталось действий</span>
-            <span class="count"><strong id="remaining">24</strong><span> / 24</span></span>
+      <div class="masthead-controls">
+        <aside class="tools" id="tools" hidden aria-label="Партия">
+          <div class="counter">
+            <span class="candle" aria-hidden="true"></span>
+            <div class="counter-copy">
+              <span>Осталось действий</span>
+              <span class="count"><strong id="remaining">24</strong><span> / 24</span></span>
+            </div>
+            <progress id="progress" max="24" value="24" aria-label="Осталось действий"></progress>
           </div>
-          <progress id="progress" max="24" value="24" aria-label="Осталось действий"></progress>
-        </div>
-        <button class="rules-button" id="rules-button" type="button" aria-label="Правила игры">
-          <span aria-hidden="true">?</span> Правила игры
+          <button class="rules-button" id="rules-button" type="button" aria-label="Правила игры">
+            <span aria-hidden="true">?</span> Правила игры
+          </button>
+        </aside>
+        <button class="icon-button sound-button" id="sound-button" type="button" aria-label="Звук игры" aria-pressed="true" title="Выключить звук">
+          <span aria-hidden="true">♪</span>
         </button>
-      </aside>
+      </div>
     </div>
   </header>
 
@@ -173,6 +179,8 @@
     <img id="zoom-image" width="570" height="852" alt="">
   </dialog>
 
+  <audio id="background-music" src="assets/background_music.mp3" preload="none" loop></audio>
+  <audio id="card-flip-effect" src="assets/blow.mp3" preload="auto"></audio>
   <noscript>Включите JavaScript в браузере, чтобы начать игру.</noscript>
 </body>
 </html>

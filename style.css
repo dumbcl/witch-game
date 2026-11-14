@@ -25,6 +25,7 @@ img { max-width: 100%; }
 
 .masthead { position: sticky; z-index: 3; top: 0; background: var(--paper); border-bottom: 1px solid var(--line); }
 .masthead-inner { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.masthead-controls { display: flex; align-items: center; gap: 12px; }
 .wordmark { display: flex; align-items: center; gap: 13px; font-weight: 720; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
 .seal { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #b48772; border-radius: 50%; color: var(--accent); font-size: 22px; line-height: 1; }
 
@@ -96,6 +97,8 @@ progress::-moz-progress-bar { background: var(--accent); }
 .icon-button, .zoom-button { display: inline-grid; place-items: center; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--accent-dark); }
 .icon-button:hover, .zoom-button:hover { background: #f1e5d6; border-color: #b78a72; }
 .icon-button { width: 35px; height: 35px; font-size: 24px; line-height: 1; }
+.sound-button { position: relative; flex-shrink: 0; border-color: #b48772; font-size: 21px; }
+.sound-button[aria-pressed="false"]::after { position: absolute; content: ''; width: 20px; height: 2px; border-radius: 2px; background: currentColor; box-shadow: 0 0 0 1px var(--paper); transform: rotate(-45deg); }
 .zoom-button { flex: 0 0 30px; min-height: 30px; font-size: 17px; }
 .final-link { display: inline-block; margin-top: 7px; font-size: 13px; line-height: 1.35; font-weight: 700; text-underline-offset: 3px; }
 .finish-banner { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 20px; padding: 16px 18px; border: 1px solid #cda38f; border-radius: 6px; background: #f5e4da; }
@@ -140,6 +143,7 @@ body:has(dialog[open]) { overflow: hidden; }
 @media (max-width: 680px) {
   .wrap { width: calc(100% - 32px); }
   .masthead-inner { min-height: 67px; }
+  .masthead-controls { gap: 7px; }
   .wordmark { gap: 7px; letter-spacing: .08em; font-size: 9px; }
   .seal { width: 29px; height: 29px; flex-shrink: 0; font-size: 17px; }
   .tools { min-width: 142px; }

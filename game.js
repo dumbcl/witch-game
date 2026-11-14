@@ -244,6 +244,7 @@ function applyGameAction(action, focus = false) {
       const key = cardKey(deck, view.card);
       game.cards[key] = side === 'a' ? 'b' : 'a';
       updateCard(deck, view);
+      playCardFlipSound();
       const left = remainingActions(game);
       elements.announcement.textContent = left === 0 && deck !== FINAL_DECK
         ? 'Действия закончились. Перейдите к колоде 13.'
@@ -286,6 +287,7 @@ function syncGame(state) {
     renderGame();
     return;
   }
+  let flipped = false;
   for (const deck of state.opened) {
     const view = deckViews.get(deck);
     if (view.button) {
@@ -294,9 +296,13 @@ function syncGame(state) {
     }
     for (const cardView of view.cards) {
       const key = cardKey(deck, cardView.card);
-      if (state.cards[key] !== previous.cards[key]) updateCard(deck, cardView);
+      if (state.cards[key] !== previous.cards[key]) {
+        updateCard(deck, cardView);
+        flipped ||= (state.cards[key] || 'a') !== (previous.cards[key] || 'a');
+      }
     }
   }
+  if (flipped) playCardFlipSound();
   updateBoard();
 }
 
