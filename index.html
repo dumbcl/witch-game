@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5eee1">
+  <meta name="description" content="Ведьма — настольное детективное расследование в Эрфурте. Изучите карты и раскройте дело за 24 действия.">
+  <title>Ведьма · Исторический детектив</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="cards.js" defer></script>
+  <script src="game.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner wrap">
+      <div class="wordmark">
+        <span class="seal" aria-hidden="true">✦</span>
+        <span>Исторический детектив</span>
+      </div>
+      <aside class="tools" id="tools" hidden aria-label="Партия">
+        <div class="counter">
+          <span class="candle" aria-hidden="true"></span>
+          <div class="counter-copy">
+            <span>Осталось действий</span>
+            <span class="count"><strong id="remaining">24</strong><span> / 24</span></span>
+          </div>
+          <progress id="progress" max="24" value="24" aria-label="Осталось действий"></progress>
+        </div>
+        <button class="rules-button" id="rules-button" type="button" aria-label="Правила игры">
+          <span aria-hidden="true">?</span> Правила игры
+        </button>
+      </aside>
+    </div>
+  </header>
+
+  <main>
+    <section id="intro" class="intro wrap" aria-labelledby="intro-title">
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="place"><span aria-hidden="true"></span> Эрфурт · 1630 год</p>
+          <h1 id="intro-title">Ведьма</h1>
+          <p class="synopsis">Молодую вдову Анну обвиняют в колдовстве. Пастор поручает вам выяснить, что произошло, пока Анну не возвели на костёр.</p>
+          <button class="button primary start" id="start" type="button">Начать игру <span aria-hidden="true">→</span></button>
+          <ul class="details" aria-label="О партии">
+            <li>1–4 игрока</li>
+            <li>60–90 минут</li>
+            <li>18+</li>
+          </ul>
+        </div>
+        <figure class="hero-image">
+          <img src="assets/erfurt.webp" alt="Старинный Эрфурт в сумерках, над крышами возвышается церковная башня" width="495" height="676" fetchpriority="high">
+        </figure>
+      </div>
+    </section>
+
+    <section id="board" class="board wrap" hidden aria-labelledby="board-title">
+      <div class="board-heading">
+        <h1 id="board-title" tabindex="-1">Ведьма</h1>
+        <p id="board-guide">Начните с колоды 1 и раскладывайте остальные по указаниям на картах.</p>
+      </div>
+      <div id="finish-banner" class="finish-banner" hidden>
+        <div>
+          <h2 id="finish-heading" tabindex="-1">Действия закончились</h2>
+          <p id="finish-copy">Перейдите к вопросам из колоды 13 и обсудите ваши версии.</p>
+        </div>
+        <button class="button primary" id="finish" type="button">Закончить игру <span aria-hidden="true">→</span></button>
+        <button class="button secondary" id="restart" type="button" hidden>Новая партия</button>
+      </div>
+      <p class="sr-only" id="announcement" role="status" aria-live="polite" aria-atomic="true"></p>
+      <div id="decks" class="decks" aria-label="Колоды"></div>
+    </section>
+  </main>
+
+  <footer class="footer wrap">
+    <span>«Ведьма» · Исторический детектив</span>
+    <span>Настольная игра © 2024 ООО «Мир Хобби»</span>
+  </footer>
+
+  <dialog id="rules" class="rules-dialog" aria-labelledby="rules-title">
+    <div class="dialog-heading">
+      <h2 id="rules-title">Правила игры</h2>
+      <form method="dialog"><button class="icon-button" aria-label="Закрыть правила" autofocus>×</button></form>
+    </div>
+    <div class="rules-body">
+      <p class="rule-meta">1–4 игрока · 18+ · 60–90 минут</p>
+      <h3>Подготовка и начало</h3>
+      <p>В верхнем левом углу карты две цифры: номер колоды и номер карты. В игре 13 колод, каждая начинается с карты 1. Не перемешивайте карты. Разложите колоду 1, бесплатно переверните первую карту и прочитайте вступление вслух. Затем следуйте указаниям на картах.</p>
+      <h3>Как вести расследование</h3>
+      <p>Флажок с номером разрешает разложить соответствующую колоду. На сайте все карты появляются стороной A. Нажмите на первую карту, чтобы бесплатно перевернуть её. Рассмотрите иллюстрации и прочитайте подписи: в них могут быть улики. Внизу карты могут быть перечислены колоды и карты, к которым теперь можно обратиться.</p>
+      <ul>
+        <li><strong>Стрелка</strong> разрешает перевернуть карту и прочитать оборот.</li>
+        <li><strong>Свеча</strong> означает, что первый переворот стоит одно действие. На сайте стоимость указана рядом с номером карты.</li>
+        <li><strong>Восклицательный знак</strong> означает, что сначала нужно получить соответствующее указание.</li>
+        <li><strong>Две цифры</strong> указывают на конкретную карту. Например, 8–3 означает карту 3 из колоды 8. К ней можно обратиться, если колода уже разложена.</li>
+      </ul>
+      <p>Игроки по очереди выбирают, какую карту изучить. Обсуждайте, на что стоит потратить действия, и обращайте внимание на эмоции персонажей. Переворачивать все карты необязательно. Пока расследование идёт, можно снова посмотреть любую сторону уже перевёрнутой карты без траты действия.</p>
+      <h3>Конец игры</h3>
+      <p>В начале у вас 24 действия. Когда они закончатся, расследование останавливается. Нажмите «Закончить игру» или откройте колоду 13. На карте 13–1 есть ссылка на вопросы. Прочитайте их вслух и предложите свои версии, опираясь на собранные улики. Когда будете готовы, переверните карту 13–1 и откройте ссылку на ответы. Начислите очки за правильные ответы.</p>
+      <dl class="scores">
+        <div><dt>5–6 очков</dt><dd>Виновные найдены и наказаны, горожане прониклись доверием к церкви и задумались над учением Мейфарта.</dd></div>
+        <div><dt>4 очка</dt><dd>Вы близки к истине, но выяснили не все обстоятельства дела.</dd></div>
+        <div><dt>3 очка</dt><dd>Доказательств не хватило, чтобы восстановить справедливость и убедить горожан.</dd></div>
+        <div><dt>0–2 очка</dt><dd>Расследование не дало результата, охота на ведьм разгорелась с новой силой.</dd></div>
+      </dl>
+      <details class="scans">
+        <summary>Сканы оригинальных правил</summary>
+        <div>
+          <a href="assets/manual-1.jpg" target="_blank" rel="noopener"><img src="assets/manual-1.jpg" alt="Оригинальные правила, страница 1. Открыть в полном размере" loading="lazy" width="1172" height="1352"></a>
+          <a href="assets/manual-2.jpg" target="_blank" rel="noopener"><img src="assets/manual-2.jpg" alt="Оригинальные правила, страница 2. Открыть в полном размере" loading="lazy" width="1174" height="1360"></a>
+        </div>
+      </details>
+    </div>
+  </dialog>
+
+  <dialog id="zoom" class="zoom-dialog" aria-labelledby="zoom-title">
+    <div class="dialog-heading">
+      <h2 id="zoom-title"></h2>
+      <form method="dialog"><button class="icon-button" aria-label="Закрыть просмотр карты" autofocus>×</button></form>
+    </div>
+    <img id="zoom-image" width="570" height="852" alt="">
+  </dialog>
+
+  <noscript>Включите JavaScript в браузере, чтобы начать игру.</noscript>
+</body>
+</html>
