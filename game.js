@@ -10,7 +10,7 @@ const FINAL_LINKS = {
 
 const elements = Object.fromEntries([
   'intro', 'board', 'tools', 'decks', 'remaining', 'progress', 'announcement',
-  'start', 'board-title', 'board-guide', 'finish-banner', 'finish-heading',
+  'solo', 'board-title', 'board-guide', 'finish-banner', 'finish-heading',
   'finish-copy', 'finish', 'restart', 'rules', 'rules-button', 'zoom', 'zoom-title', 'zoom-image',
 ].map(id => [id, document.getElementById(id)]));
 
@@ -31,34 +31,42 @@ function remainingActions(game) {
   }, ACTION_LIMIT);
 }
 
+function readGame(saved) {
+  if (!saved || !Array.isArray(saved.opened) || !saved.cards) return null;
+
+  const state = newGame();
+  for (const deck of new Set(saved.opened)) {
+    if (!Number.isInteger(deck) || !DECKS[deck - 1]) continue;
+    state.opened.push(deck);
+    for (const card of DECKS[deck - 1]) {
+      const key = cardKey(deck, card);
+      if (['a', 'b'].includes(saved.cards[key])) state.cards[key] = saved.cards[key];
+    }
+  }
+
+  const remaining = remainingActions(state);
+  if (remaining < 0) return null;
+  state.ended = remaining === 0 && state.opened.includes(FINAL_DECK) && saved.ended === true;
+  return state;
+}
+
 function restoreGame() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!saved || !Array.isArray(saved.opened) || !saved.cards) return null;
-
-    const game = newGame();
-    for (const deck of new Set(saved.opened)) {
-      if (!Number.isInteger(deck) || deck < 1 || deck > DECKS.length) continue;
-      game.opened.push(deck);
-      for (const card of DECKS[deck - 1]) {
-        const key = cardKey(deck, card);
-        if (['a', 'b'].includes(saved.cards[key])) game.cards[key] = saved.cards[key];
-      }
-    }
-
-    const remaining = remainingActions(game);
-    if (remaining < 0) return null;
-    game.ended = remaining === 0 && game.opened.includes(FINAL_DECK) && saved.ended === true;
-    return game;
+    return readGame(JSON.parse(localStorage.getItem(STORAGE_KEY)));
   } catch {
     return null;
   }
 }
 
-let game = restoreGame();
+let game = null;
+let onlineGame = null;
 const deckViews = new Map();
 
 function saveGame() {
+  if (onlineGame) {
+    onlineGame.publish();
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
   } catch {
@@ -73,11 +81,13 @@ function cardSide(deck, card) {
 function updateBoard() {
   const remaining = remainingActions(game);
   const stopped = remaining === 0;
+  const blocked = onlineGame && !onlineGame.canPlay();
   elements.remaining.textContent = remaining;
   elements.progress.value = remaining;
   elements['finish-banner'].hidden = !stopped;
   elements.finish.hidden = !stopped || game.ended;
-  elements.restart.hidden = !game.ended;
+  elements.finish.disabled = Boolean(blocked);
+  elements.restart.hidden = !game.ended || Boolean(onlineGame && !onlineGame.isHost);
   elements['finish-heading'].textContent = game.ended ? 'Расследование завершено' : 'Действия закончились';
   elements['finish-copy'].textContent = game.ended
     ? 'Обсудите ответы на вопросы и сверьте их с решением в колоде 13.'
@@ -85,10 +95,10 @@ function updateBoard() {
   elements['board-guide'].hidden = stopped;
 
   for (const [deck, view] of deckViews) {
-    if (view.button) view.button.disabled = stopped && deck !== FINAL_DECK;
+    if (view.button) view.button.disabled = Boolean(blocked || (stopped && deck !== FINAL_DECK));
     if (view.cards) {
       for (const { face } of view.cards) {
-        face.setAttribute('aria-disabled', String(stopped && deck !== FINAL_DECK));
+        face.setAttribute('aria-disabled', String(Boolean(blocked || (stopped && deck !== FINAL_DECK))));
       }
     }
   }
@@ -103,7 +113,7 @@ function closedDeckButton(deck) {
     <span class="deck-index" aria-hidden="true">${String(deck).padStart(2, '0')}</span>
     <span class="deck-label">Разложить колоду ${deck}</span>
     <span class="deck-arrow" aria-hidden="true">→</span>`;
-  button.addEventListener('click', () => openDeck(deck));
+  button.addEventListener('click', () => playAction({ type: 'open', deck }));
   return button;
 }
 
@@ -151,7 +161,9 @@ function createCard(deck, card) {
     figure.append(view.link);
   }
 
-  view.face.addEventListener('click', () => flipCard(deck, view));
+  view.face.addEventListener('click', () => playAction({
+    type: 'flip', deck, number: card.number, side: cardSide(deck, card),
+  }));
   figure.querySelector('.zoom-button').addEventListener('click', () => {
     elements['zoom-title'].textContent = view.image.alt;
     elements['zoom-image'].src = view.image.src;
@@ -204,53 +216,104 @@ function renderGame() {
   updateBoard();
 }
 
-function openDeck(deck) {
-  if (game.opened.includes(deck) || (remainingActions(game) === 0 && deck !== FINAL_DECK)) return;
-  game.opened.push(deck);
-
-  saveGame();
-  const heading = renderOpenedDeck(deck);
-  updateBoard();
-  heading.focus({ preventScroll: true });
-  deckViews.get(deck).section.scrollIntoView({ block: 'nearest' });
-}
-
-function flipCard(deck, view) {
-  if (remainingActions(game) === 0 && deck !== FINAL_DECK) return;
-  const { card } = view;
-  const key = cardKey(deck, card);
-  game.cards[key] = cardSide(deck, card) === 'a' ? 'b' : 'a';
-  saveGame();
-  updateCard(deck, view);
-  updateBoard();
+function applyGameAction(action, focus = false) {
+  if (!game || !action || typeof action !== 'object') return false;
+  const { type, deck, number, side } = action;
   const remaining = remainingActions(game);
-  elements.announcement.textContent = remaining === 0 && deck !== FINAL_DECK
-    ? 'Действия закончились. Перейдите к колоде 13.'
-    : `Карта ${key}, сторона ${game.cards[key].toUpperCase()}. Осталось действий: ${remaining}.`;
-  if (remaining === 0 && deck !== FINAL_DECK) {
-    elements['finish-heading'].focus();
+
+  if (type === 'finish') {
+    if (remaining !== 0 || game.ended) return false;
+    if (!game.opened.includes(FINAL_DECK)) {
+      game.opened.push(FINAL_DECK);
+      renderOpenedDeck(FINAL_DECK);
+    }
+    game.ended = true;
+    if (focus) focusDeck(FINAL_DECK, 'start');
+  } else {
+    if (!Number.isInteger(deck) || !DECKS[deck - 1] || (remaining === 0 && deck !== FINAL_DECK)) {
+      return false;
+    }
+    const opened = game.opened.includes(deck);
+    if (type === 'open' && !opened) {
+      game.opened.push(deck);
+      renderOpenedDeck(deck);
+      if (focus) focusDeck(deck);
+    } else if (type === 'flip' && opened) {
+      const view = deckViews.get(deck).cards.find(({ card }) => card.number === number);
+      if (!view || cardSide(deck, view.card) !== side) return false;
+      const key = cardKey(deck, view.card);
+      game.cards[key] = side === 'a' ? 'b' : 'a';
+      updateCard(deck, view);
+      const left = remainingActions(game);
+      elements.announcement.textContent = left === 0 && deck !== FINAL_DECK
+        ? 'Действия закончились. Перейдите к колоде 13.'
+        : `Карта ${key}, сторона ${game.cards[key].toUpperCase()}. Осталось действий: ${left}.`;
+      updateBoard();
+      if (focus && left === 0 && deck !== FINAL_DECK) elements['finish-heading'].focus();
+    } else {
+      return false;
+    }
   }
+  saveGame();
+  updateBoard();
+  return true;
 }
 
-elements.start.addEventListener('click', () => {
-  game = newGame();
+function focusDeck(deck, block = 'nearest') {
+  const { section } = deckViews.get(deck);
+  section.querySelector('h2').focus({ preventScroll: true });
+  section.scrollIntoView({ block });
+}
+
+function playAction(action) {
+  if (onlineGame && !onlineGame.isHost) {
+    onlineGame.request(action);
+    return;
+  }
+  applyGameAction(action, true);
+}
+
+function syncGame(state) {
+  const previous = game;
+  game = state;
+  if (!state) {
+    elements.board.hidden = true;
+    elements.tools.hidden = true;
+    elements.announcement.textContent = '';
+    return;
+  }
+  if (!previous) {
+    renderGame();
+    return;
+  }
+  for (const deck of state.opened) {
+    const view = deckViews.get(deck);
+    if (view.button) {
+      renderOpenedDeck(deck);
+      continue;
+    }
+    for (const cardView of view.cards) {
+      const key = cardKey(deck, cardView.card);
+      if (state.cards[key] !== previous.cards[key]) updateCard(deck, cardView);
+    }
+  }
+  updateBoard();
+}
+
+elements.solo.addEventListener('click', () => {
+  game = restoreGame() || newGame();
   saveGame();
   renderGame();
   elements['board-title'].focus();
 });
 
-elements.finish.addEventListener('click', () => {
-  if (remainingActions(game) !== 0) return;
-  if (!game.opened.includes(FINAL_DECK)) openDeck(FINAL_DECK);
-  game.ended = true;
-  saveGame();
-  updateBoard();
-  const finalSection = deckViews.get(FINAL_DECK).section;
-  finalSection.querySelector('h2').focus({ preventScroll: true });
-  finalSection.scrollIntoView({ block: 'start' });
-});
+elements.finish.addEventListener('click', () => playAction({ type: 'finish' }));
 
 elements.restart.addEventListener('click', () => {
+  if (onlineGame) {
+    onlineGame.reset();
+    return;
+  }
   game = null;
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -261,7 +324,8 @@ elements.restart.addEventListener('click', () => {
   elements.tools.hidden = true;
   elements.intro.hidden = false;
   elements.announcement.textContent = '';
-  elements.start.focus();
+  elements.solo.textContent = 'Играть одному';
+  elements.solo.focus();
   window.scrollTo(0, 0);
 });
 
@@ -276,4 +340,4 @@ for (const dialog of [elements.rules, elements.zoom]) {
   });
 }
 
-if (game) renderGame();
+if (restoreGame()) elements.solo.textContent = 'Продолжить одиночную игру';

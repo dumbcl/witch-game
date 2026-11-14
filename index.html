@@ -9,13 +9,18 @@
   <link rel="stylesheet" href="style.css">
   <script src="cards.js" defer></script>
   <script src="game.js" defer></script>
+  <script src="room-network.js" defer></script>
+  <script src="online.js" defer></script>
 </head>
 <body>
   <header class="masthead">
     <div class="masthead-inner wrap">
-      <div class="wordmark">
-        <span class="seal" aria-hidden="true">✦</span>
-        <span>Исторический детектив</span>
+      <div class="masthead-brand">
+        <div class="wordmark">
+          <span class="seal" aria-hidden="true">✦</span>
+          <span>Исторический детектив</span>
+        </div>
+        <p id="player-count" role="status" hidden></p>
       </div>
       <aside class="tools" id="tools" hidden aria-label="Партия">
         <div class="counter">
@@ -40,7 +45,11 @@
           <p class="place"><span aria-hidden="true"></span> Эрфурт · 1630 год</p>
           <h1 id="intro-title">Ведьма</h1>
           <p class="synopsis">Молодую вдову Анну обвиняют в колдовстве. Пастор поручает вам выяснить, что произошло, пока Анну не возвели на костёр.</p>
-          <button class="button primary start" id="start" type="button">Начать игру <span aria-hidden="true">→</span></button>
+          <div class="intro-actions">
+            <button class="button primary start" id="create-room" type="button">Создать игру <span aria-hidden="true">→</span></button>
+            <button class="button secondary start" id="join-room" type="button">Подключиться к игре</button>
+          </div>
+          <button class="text-button" id="solo" type="button">Играть одному</button>
           <ul class="details" aria-label="О партии">
             <li>1–4 игрока</li>
             <li>60–90 минут</li>
@@ -50,6 +59,23 @@
         <figure class="hero-image">
           <img src="assets/erfurt.webp" alt="Старинный Эрфурт в сумерках, над крышами возвышается церковная башня" width="495" height="676" fetchpriority="high">
         </figure>
+      </div>
+    </section>
+
+    <section id="room-panel" class="wrap room-wrap" aria-label="Игровая комната" hidden>
+      <div class="room-panel">
+        <div class="room-heading">
+          <div>
+            <h2 id="room-name" tabindex="-1"></h2>
+            <p id="room-status" role="status"></p>
+          </div>
+          <button class="text-button" id="leave-room" type="button">Выйти из комнаты</button>
+        </div>
+        <div class="roster">
+          <ul id="room-players" aria-label="Игроки"></ul>
+          <span id="room-count"></span>
+        </div>
+        <button class="button primary" id="start" type="button" hidden>Начать игру <span aria-hidden="true">→</span></button>
       </div>
     </section>
 
@@ -75,6 +101,33 @@
     <span>«Ведьма» · Исторический детектив</span>
     <span>Настольная игра © 2024 ООО «Мир Хобби»</span>
   </footer>
+
+  <dialog id="online-dialog" class="online-dialog" aria-labelledby="online-title">
+    <div class="dialog-heading">
+      <h2 id="online-title"></h2>
+      <form method="dialog"><button class="icon-button" aria-label="Закрыть" autofocus>×</button></form>
+    </div>
+    <div class="online-body">
+      <form class="online-form" id="create-form" hidden>
+        <label for="new-room-name">Название игры</label>
+        <input id="new-room-name" required maxlength="64" autocomplete="off" aria-describedby="room-name-help">
+        <small id="room-name-help">Название видно всем в списке игр.</small>
+        <label for="new-room-password">Пароль</label>
+        <input id="new-room-password" type="password" required maxlength="128" autocomplete="new-password">
+        <button class="button primary" type="submit">Создать комнату</button>
+      </form>
+      <ul id="room-list" class="room-list" aria-label="Игры" hidden></ul>
+      <form class="online-form" id="join-form" hidden>
+        <label for="join-password">Пароль</label>
+        <input id="join-password" type="password" required maxlength="128" autocomplete="off">
+        <div class="form-actions">
+          <button class="button primary" type="submit">Подключиться</button>
+          <button class="button secondary" id="back-to-rooms" type="button">К списку игр</button>
+        </div>
+      </form>
+      <p id="online-status" role="status"></p>
+    </div>
+  </dialog>
 
   <dialog id="rules" class="rules-dialog" aria-labelledby="rules-title">
     <div class="dialog-heading">
